@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: beit-shemesh-news-ivr
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: TTS_PROVIDER
+        value: edge
+      - key: PUBLISH_ORDER_MODE
+        value: highest_first
+      - key: YEMOT_PUBLISH_PATH
+        value: 1
+      - key: YEMOT_PREVIEW_PATH
+        value: 0/0/6/preview
+      - key: YEMOT_ARCHIVE_PATH
+        value: 0/0/6/archive
+      - key: WEBHOOK_SECRET
+        generateValue: true
+      - key: YEMOT_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

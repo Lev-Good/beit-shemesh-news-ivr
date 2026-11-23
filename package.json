@@ -1,0 +1,17 @@
+{
+  "name": "beit-shemesh-news-ivr",
+  "version": "1.0.0",
+  "private": true,
+  "description": "מערכת עיבוד ואישור הודעות קוליות לחדשות בית שמש",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": { "start": "node src/index.js", "dev": "node --watch src/index.js", "test": "node --test" },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "dotenv": "^16.4.7",
+    "node-edge-tts": "^1.2.12",
+    "express": "^4.21.2",
+    "yemot-router2": "^6.2.3"
+  }
+}

@@ -8,13 +8,17 @@ const { createPublisher } = require('./yemot/publisher');
 const { createCallFlow, createYemotIo } = require('./yemot/callFlow');
 const { createProcessor } = require('./services/processor');
 const { createGemini } = require('./services/gemini');
+const { createGroqRewriter } = require('./services/groq');
 const { createTtsProvider } = require('./services/tts');
 const { RateLimiter } = require('./utils/rateLimiter');
 const { createCleanup } = require('./utils/cleanup');
 
 function createApp({ config = loadConfig(), yemot, gemini, tts, logger = log } = {}) {
   yemot ||= new YemotClient(config);
-  gemini ||= createGemini({ apiKey: config.geminiApiKey, model: config.geminiModel, promptPath: config.promptPath });
+  const geminiFallback = gemini || createGemini({ apiKey: config.geminiApiKey, model: config.geminiModel, promptPath: config.promptPath });
+  gemini ||= config.groqApiKey
+    ? createGroqRewriter({ apiKey: config.groqApiKey, sttModel: config.groqSttModel, chatModel: config.groqChatModel, promptPath: config.promptPath, fallback: geminiFallback })
+    : geminiFallback;
   tts ||= createTtsProvider(config);
   const processor = createProcessor({ yemot, gemini, tts, config });
   const publisher = createPublisher({ yemot, config });

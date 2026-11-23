@@ -13,7 +13,7 @@ function createProcessor({ yemot, gemini, tts, config }) {
           job.result = result;
           if (result.status === 'unprocessable') { job.status = 'unprocessable'; return job; }
           const spoken = await tts.synthesize(result.text); const safeId = String(callId).replace(/[^A-Za-z0-9_]/g, '_').slice(0, 100) || 'call'; const preview = `${config.previewPath}/${safeId}.wav`;
-          const uploadExt = config.ttsProvider === 'azure' ? 'wav' : 'mp3';
+          const uploadExt = config.ttsProvider === 'edge' ? 'mp3' : 'wav';
           const uploaded = await yemot.uploadFile(preview, spoken, `${safeId}.${uploadExt}`);
           job.previewPath = preview; job.duration = Number(uploaded.duration); job.status = 'ready'; return job;
         } catch (error) { job.error = error; if (attempt < config.aiRetryCount) await sleep(config.aiRetryDelayMs); }

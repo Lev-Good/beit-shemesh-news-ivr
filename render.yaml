@@ -10,7 +10,7 @@ services:
       - key: NODE_VERSION
         value: 20
       - key: TTS_PROVIDER
-        value: edge
+        value: gemini
       - key: PUBLISH_ORDER_MODE
         value: highest_first
       - key: YEMOT_PUBLISH_PATH

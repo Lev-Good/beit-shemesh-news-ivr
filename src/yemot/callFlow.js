@@ -51,7 +51,7 @@ function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logg
     } catch (error) {
       logger('error', 'call_flow', error, callId);
       processor.forget?.(callId);
-      await io.error().catch(() => {});
+      try { await io.error(); } catch {}
       return { state: 'failed', archivePath, error };
     }
   }

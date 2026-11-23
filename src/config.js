@@ -14,7 +14,7 @@ function loadConfig(env = process.env) {
     yemotToken: get('YEMOT_TOKEN', ''), yemotUsername: get('YEMOT_USERNAME', ''), yemotPassword: get('YEMOT_PASSWORD', ''),
     yemotPathPrefix: get('YEMOT_PATH_PREFIX', 'ivr2:'),
     publishPath: get('YEMOT_PUBLISH_PATH', '1'), previewPath: get('YEMOT_PREVIEW_PATH', '0/0/6/preview'), archivePath: get('YEMOT_ARCHIVE_PATH', '0/0/6/archive'),
-    publishOrderMode: get('PUBLISH_ORDER_MODE', 'highest_first'), geminiApiKey: get('GEMINI_API_KEY', ''), geminiModel: get('GEMINI_MODEL', 'gemini-2.5-flash'),
+    publishOrderMode: get('PUBLISH_ORDER_MODE', 'highest_first'), geminiApiKey: get('GEMINI_API_KEY', ''), geminiModel: get('GEMINI_MODEL', 'gemini-3.1-flash-lite'),
     ttsProvider: get('TTS_PROVIDER', 'edge'), edgeTtsVoice: get('EDGE_TTS_VOICE', 'he-IL-AvriNeural'), azureSpeechKey: get('AZURE_SPEECH_KEY', ''), azureSpeechRegion: get('AZURE_SPEECH_REGION', ''), azureTtsVoice: get('AZURE_TTS_VOICE', 'he-IL-AvriNeural'),
     maxRecordingSeconds: int('MAX_RECORDING_SECONDS', 120, 1, env), maxWaitSeconds: int('MAX_WAIT_SECONDS', 40, 1, env), aiRetryCount: int('AI_RETRY_COUNT', 2, 0, env), aiRetryDelayMs: int('AI_RETRY_DELAY_MS', 3000, 0, env),
     yemotRetryCount: int('YEMOT_RETRY_COUNT', 3, 0, env), yemotRetryDelayMs: int('YEMOT_RETRY_DELAY_MS', 1000, 0, env), previewTtlHours: int('PREVIEW_TTL_HOURS', 24, 1, env), archiveRetentionDays: int('ARCHIVE_RETENTION_DAYS', 30, 1, env), rateLimitPerPhoneHour: int('RATE_LIMIT_PER_PHONE_HOUR', 10, 1, env), rateLimitGlobalPerHour: int('RATE_LIMIT_GLOBAL_PER_HOUR', 120, 1, env),

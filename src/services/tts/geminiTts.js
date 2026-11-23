@@ -34,7 +34,7 @@ class GeminiTtsProvider {
       try {
         const response = await this.ai.models.generateContent({
           model,
-          contents: `קריין בקול רדיו חדשותי ברור, נעים ומכובד בעברית את הטקסט הבא בדיוק כפי שהוא כתוב, ללא תוספות:\n${text}`,
+          contents: String(text || '').trim(),
           config: {
             responseModalities: ['AUDIO'],
             speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.voice } } }

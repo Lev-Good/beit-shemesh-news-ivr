@@ -29,18 +29,27 @@ function createApp({ config = loadConfig(), yemot, gemini, tts, logger = log } =
   app.use(express.urlencoded({ extended: true }));
   app.get('/ping', (req, res) => res.status(200).json({ ok: true, service: 'beit-shemesh-news-ivr' }));
   app.get('/health', (req, res) => res.status(200).json({ ok: true }));
-  app.use('/yemot', (req, res, next) => {
+  const yemotGuard = (req, res, next) => {
     if (config.webhookSecret && req.query.secret !== config.webhookSecret && req.body?.secret !== config.webhookSecret) return res.status(403).json({ message: 'forbidden' });
     const values = req.method === 'POST' ? req.body : req.query;
     if (!values?.ApiCallId) return res.status(400).json({ message: 'ApiCallId חסר' });
     next();
-  });
-  const router = YemotRouter({ printLog: false, uncaughtErrorHandler: async (error, call) => {
+  };
+  const errorHandler = async (error, call) => {
     logger('error', 'yemot_router', error, call?.callId);
     return call.id_list_message([{ type: 'text', data: 'אירעה תקלה זמנית, אנא נסו שוב מאוחר יותר' }]);
-  } });
+  };
+  const router = YemotRouter({ printLog: false, uncaughtErrorHandler: errorHandler });
   router.get('/', async call => flow.run(call, createYemotIo(call, processor, config)));
-  app.use('/yemot', router);
+  app.use('/yemot', yemotGuard, router);
+
+  const listenersOverrides = {
+    publish: '2/1', archive: '2/2/archive', preview: '2/2/preview',
+    prompt: 'listeners', voice: 'Puck', tzintukList: '50', tzintukCallerId: '0775316147'
+  };
+  const listenersRouter = YemotRouter({ printLog: false, uncaughtErrorHandler: errorHandler });
+  listenersRouter.get('/', async call => flow.run(call, createYemotIo(call, processor, config), listenersOverrides));
+  app.use('/yemot-listeners', yemotGuard, listenersRouter);
   app.use((error, req, res, next) => { logger('error', 'http', error); if (!res.headersSent) res.status(500).json({ message: 'אירעה תקלה זמנית' }); });
   return { app, cleanup, processor, publisher, flow };
 }

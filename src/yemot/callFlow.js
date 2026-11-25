@@ -5,9 +5,9 @@ const { log } = require('../logger');
 const PROMPT_FILES = { rewrite: 'rewrite.txt', listeners: 'listeners.txt' };
 
 function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logger = log }) {
-  async function run(call, io) {
+  async function run(call, io, overrides = {}) {
     const callId = String(call.callId || call.id || ''); const phone = call.phone || 'unknown';
-    const q = call.req?.query || {};
+    const q = { ...(call.req?.query || {}), ...(overrides || {}) };
     const publishDir = String(q.publish || config.publishPath || '').replace(/^\/+|\/+$/g, '') || config.publishPath;
     const archiveDir = String(q.archive || config.archivePath || '').replace(/^\/+|\/+$/g, '') || config.archivePath;
     const previewDir = String(q.preview || config.previewPath || '').replace(/^\/+|\/+$/g, '') || config.previewPath;

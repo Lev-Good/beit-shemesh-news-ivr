@@ -11,7 +11,7 @@ function parseJson(text) {
 
 function createGroqRewriter({ apiKey, sttModel = 'whisper-large-v3-turbo', chatModel = 'openai/gpt-oss-120b', promptPath, fallback = null, fetchImpl = fetch }) {
   return {
-    async rewrite(audio, mimeType = 'audio/wav') {
+    async rewrite(audio, mimeType = 'audio/wav', customPromptPath = null) {
       try {
         const form = new FormData();
         form.append('file', new Blob([audio], { type: mimeType }), 'recording.wav');
@@ -33,7 +33,7 @@ function createGroqRewriter({ apiKey, sttModel = 'whisper-large-v3-turbo', chatM
           return { status: 'unprocessable', text: '', reason: 'לא זוהה דיבור ברור בהקלטה' };
         }
 
-        const prompt = await fs.readFile(promptPath, 'utf8');
+        const prompt = await fs.readFile(customPromptPath || promptPath, 'utf8');
         const chatRes = await fetchImpl(GROQ_CHAT_URL, {
           method: 'POST',
           headers: {
@@ -63,7 +63,7 @@ function createGroqRewriter({ apiKey, sttModel = 'whisper-large-v3-turbo', chatM
         }
         return result;
       } catch (error) {
-        if (fallback) return fallback.rewrite(audio, mimeType);
+        if (fallback) return fallback.rewrite(audio, mimeType, customPromptPath);
         throw error;
       }
     }

@@ -22,13 +22,14 @@ function pcmToWav(pcm, sampleRate = 24000, channels = 1, bitsPerSample = 16) {
 }
 
 class GeminiTtsProvider {
-  constructor({ apiKey, model = 'gemini-3.8-flash-lite-tts', fallbackModels = ['gemini-3.8-flash-tts'], voice = 'Orus' } = {}) {
+  constructor({ apiKey, model = 'gemini-3.8-flash-lite-tts', fallbackModels = ['gemini-3.8-flash-tts'], voice = 'Charon' } = {}) {
     this.ai = new GoogleGenAI({ apiKey });
     this.models = [...new Set([model, ...fallbackModels].filter(Boolean))];
     this.voice = voice;
   }
 
-  async synthesize(text) {
+  async synthesize(text, voiceOverride = null) {
+    const voiceName = voiceOverride || this.voice;
     let lastError;
     for (const model of this.models) {
       try {
@@ -37,7 +38,7 @@ class GeminiTtsProvider {
           contents: String(text || '').trim(),
           config: {
             responseModalities: ['AUDIO'],
-            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.voice } } }
+            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
           }
         });
         const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.data)?.inlineData;

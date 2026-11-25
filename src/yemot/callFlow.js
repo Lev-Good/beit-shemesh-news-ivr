@@ -1,5 +1,8 @@
 'use strict';
+const path = require('node:path');
 const { log } = require('../logger');
+
+const PROMPT_FILES = { rewrite: 'rewrite.txt', listeners: 'listeners.txt' };
 
 function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logger = log }) {
   async function run(call, io) {
@@ -8,6 +11,10 @@ function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logg
     const publishDir = String(q.publish || config.publishPath || '').replace(/^\/+|\/+$/g, '') || config.publishPath;
     const archiveDir = String(q.archive || config.archivePath || '').replace(/^\/+|\/+$/g, '') || config.archivePath;
     const previewDir = String(q.preview || config.previewPath || '').replace(/^\/+|\/+$/g, '') || config.previewPath;
+    const promptKey = String(q.prompt || '').trim();
+    const promptPath = PROMPT_FILES[promptKey] && config.promptsDir ? path.join(config.promptsDir, PROMPT_FILES[promptKey]) : null;
+    const voice = q.voice ? String(q.voice).trim() : null;
+    const procOpts = { previewDir, promptPath, voice };
     const tzintukList = q.tzintukList ? String(q.tzintukList).trim() : '';
     const tzintukCallerId = q.tzintukCallerId ? String(q.tzintukCallerId).trim() : '';
     const triggerTzintuk = () => {
@@ -29,7 +36,7 @@ function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logg
         const sourcePath = originalPath.includes('/') || !ext ? originalPath : `${ext}/${originalPath}`;
         await yemot.copyFile(sourcePath, archivePath);
 
-        let job = processor.start(callId, archivePath, previewDir);
+        let job = processor.start(callId, archivePath, procOpts);
         while (true) {
           if (job.status === 'processing') {
             const started = Date.now();
@@ -43,7 +50,7 @@ function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logg
             if (choice === '1') {
               const published = await publisher.publish(archivePath, callId, publishDir); triggerTzintuk(); await io.published(published); return { state: 'published_original', published, archivePath };
             }
-            if (choice === '2') { job = processor.start(callId, archivePath, previewDir); continue; }
+            if (choice === '2') { job = processor.start(callId, archivePath, procOpts); continue; }
             return { state: 'disconnected', archivePath };
           }
           if (job.status === 'ready') {
@@ -54,7 +61,7 @@ function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logg
               await io.published(published); await processor.removePreview(callId);
               return { state: 'published', published, archivePath };
             }
-            if (choice === '2') { await processor.discard(callId); job = processor.start(callId, archivePath, previewDir); continue; }
+            if (choice === '2') { await processor.discard(callId); job = processor.start(callId, archivePath, procOpts); continue; }
             if (choice === '3') { await processor.discard(callId); break; }
             if (choice === '4') continue;
           }

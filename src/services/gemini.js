@@ -5,8 +5,8 @@ function parseJson(text) { const clean = String(text).trim().replace(/^```(?:jso
 function createGemini({ apiKey, model = 'gemini-3.1-flash-lite', fallbackModels = ['gemini-3.8-flash', 'gemini-3.5-flash'], promptPath }) {
   const ai = new GoogleGenAI({ apiKey });
   const models = [...new Set([model, ...fallbackModels].filter(Boolean))];
-  return { async rewrite(audio, mimeType = 'audio/wav') {
-    const prompt = await fs.readFile(promptPath, 'utf8');
+  return { async rewrite(audio, mimeType = 'audio/wav', customPromptPath = null) {
+    const prompt = await fs.readFile(customPromptPath || promptPath, 'utf8');
     let lastError;
     for (const currentModel of models) {
       try {

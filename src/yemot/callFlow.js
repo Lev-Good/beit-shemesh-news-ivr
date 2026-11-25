@@ -4,6 +4,17 @@ const { log } = require('../logger');
 function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logger = log }) {
   async function run(call, io) {
     const callId = String(call.callId || call.id || ''); const phone = call.phone || 'unknown';
+    const q = call.req?.query || {};
+    const publishDir = String(q.publish || config.publishPath || '').replace(/^\/+|\/+$/g, '') || config.publishPath;
+    const archiveDir = String(q.archive || config.archivePath || '').replace(/^\/+|\/+$/g, '') || config.archivePath;
+    const previewDir = String(q.preview || config.previewPath || '').replace(/^\/+|\/+$/g, '') || config.previewPath;
+    const tzintukList = q.tzintukList ? String(q.tzintukList).trim() : '';
+    const tzintukCallerId = q.tzintukCallerId ? String(q.tzintukCallerId).trim() : '';
+    const triggerTzintuk = () => {
+      if (tzintukList && typeof yemot.runTzintuk === 'function') {
+        yemot.runTzintuk(tzintukList, tzintukCallerId).catch(err => logger('error', 'tzintuk', err, callId));
+      }
+    };
     let originalPath = null; let archivePath = null; let revision = 0;
     if (!callId) throw new Error('ApiCallId חסר');
     if (!rateLimiter.allow(phone)) { await io.rateLimited(); return { state: 'rate_limited' }; }
@@ -13,12 +24,12 @@ function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logg
         if (!originalPath) { await io.noRecording(); continue; }
         revision++;
         const safeId = callId.replace(/[^A-Za-z0-9_]/g, '_').slice(0, 100) || 'call';
-        archivePath = `${config.archivePath}/${safeId}_${revision}.wav`;
+        archivePath = `${archiveDir}/${safeId}_${revision}.wav`;
         const ext = String(call.ApiExtension || call.values?.ApiExtension || '').replace(/^\/+|\/+$/g, '');
         const sourcePath = originalPath.includes('/') || !ext ? originalPath : `${ext}/${originalPath}`;
         await yemot.copyFile(sourcePath, archivePath);
 
-        let job = processor.start(callId, archivePath);
+        let job = processor.start(callId, archivePath, previewDir);
         while (true) {
           if (job.status === 'processing') {
             const started = Date.now();
@@ -30,19 +41,20 @@ function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logg
           if (job.status === 'failed') {
             const choice = await io.aiFailure();
             if (choice === '1') {
-              const published = await publisher.publish(archivePath, callId); await io.published(published); return { state: 'published_original', published, archivePath };
+              const published = await publisher.publish(archivePath, callId, publishDir); triggerTzintuk(); await io.published(published); return { state: 'published_original', published, archivePath };
             }
-            if (choice === '2') { job = processor.start(callId, archivePath); continue; }
+            if (choice === '2') { job = processor.start(callId, archivePath, previewDir); continue; }
             return { state: 'disconnected', archivePath };
           }
           if (job.status === 'ready') {
             const choice = await io.preview(job.previewPath, job.result.text);
             if (choice === '1') {
-              const published = await publisher.publish(job.previewPath, callId);
+              const published = await publisher.publish(job.previewPath, callId, publishDir);
+              triggerTzintuk();
               await io.published(published); await processor.removePreview(callId);
               return { state: 'published', published, archivePath };
             }
-            if (choice === '2') { await processor.discard(callId); job = processor.start(callId, archivePath); continue; }
+            if (choice === '2') { await processor.discard(callId); job = processor.start(callId, archivePath, previewDir); continue; }
             if (choice === '3') { await processor.discard(callId); break; }
             if (choice === '4') continue;
           }
@@ -70,9 +82,9 @@ function toYemotFilePath(filePath) {
 function createYemotIo(call, processor, config) {
   const tap = (text, digits = ['1']) => call.read([{ type: 'text', data: sanitizeForTTS(text) }], 'tap', { min_digits: 1, max_digits: 1, digits_allowed: digits });
   return {
-    record: maxLength => call.read([{ type: 'text', data: sanitizeForTTS('הקליטו את הודעתכם לאחר הצליל, לסיום הקישו סולמית') }], 'record', { max_length: maxLength, min_length: 1, play_beep: true, save_on_hangup: false }),
+    record: maxLength => call.read([{ type: 'text', data: sanitizeForTTS('הקליטו את הודעתכם לאחר הצליל, לסיום הקישו סולמית') }], 'record', { max_length: maxLength, min_length: 1, no_confirm_menu: true, save_on_hangup: false }),
     waiting: async () => {
-      await processor.wait(call.callId, 900);
+      await processor.wait(call.callId, 1500);
       if (processor.jobs.get(call.callId)?.status !== 'processing') return '1';
       return call.read([{ type: 'text', data: sanitizeForTTS('ההודעה בעיבוד, נא להמתין') }], 'tap', { max_digits: 1, sec_wait: 1, allow_empty: true, empty_val: '0', digits_allowed: ['1'] });
     },

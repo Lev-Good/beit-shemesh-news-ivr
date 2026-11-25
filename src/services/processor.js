@@ -3,7 +3,7 @@ const { log } = require('../logger');
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 function createProcessor({ yemot, gemini, tts, config }) {
   const jobs = new Map();
-  function execute(callId, originalPath) {
+  function execute(callId, originalPath, previewDir = config.previewPath) {
     const job = { callId, originalPath, status: 'processing', previewPath: null, result: null, error: null, attempts: 0, promise: null }; jobs.set(callId, job);
     job.promise = (async () => {
       for (let attempt = 0; attempt <= config.aiRetryCount; attempt++) {
@@ -12,7 +12,7 @@ function createProcessor({ yemot, gemini, tts, config }) {
           const audio = await yemot.downloadFile(originalPath); const result = await gemini.rewrite(audio);
           job.result = result;
           if (result.status === 'unprocessable') { job.status = 'unprocessable'; return job; }
-          const spoken = await tts.synthesize(result.text); const safeId = String(callId).replace(/[^A-Za-z0-9_]/g, '_').slice(0, 100) || 'call'; const preview = `${config.previewPath}/${safeId}.wav`;
+          const spoken = await tts.synthesize(result.text); const safeId = String(callId).replace(/[^A-Za-z0-9_]/g, '_').slice(0, 100) || 'call'; const preview = `${previewDir || config.previewPath}/${safeId}.wav`;
           const uploadExt = config.ttsProvider === 'edge' ? 'mp3' : 'wav';
           const uploaded = await yemot.uploadFile(preview, spoken, `${safeId}.${uploadExt}`);
           job.previewPath = preview; job.duration = Number(uploaded.duration); job.status = 'ready'; return job;

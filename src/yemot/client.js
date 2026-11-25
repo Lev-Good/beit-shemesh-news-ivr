@@ -72,5 +72,6 @@ class YemotClient {
   copyFile(from, to) { return this.fileAction('copy', from, to); }
   moveFile(from, to) { return this.fileAction('move', from, to); }
   deleteFile(path) { return this.fileAction('delete', path); }
+  runTzintuk(listId, callerId) { return this.request('RunTzintuk', { phones: `tzl:${listId}`, ...(callerId ? { callerId } : {}) }); }
 }
 module.exports = { YemotClient, validDuration };

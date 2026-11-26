@@ -73,5 +73,22 @@ class YemotClient {
   moveFile(from, to) { return this.fileAction('move', from, to); }
   deleteFile(path) { return this.fileAction('delete', path); }
   runTzintuk(listId, callerId) { return this.request('RunTzintuk', { phones: `tzl:${listId}`, ...(callerId ? { callerId } : {}) }); }
+  async downloadTextFile(filePath) {
+    try {
+      const url = new URL('DownloadFile', API); url.searchParams.set('token', await this.getToken()); url.searchParams.set('path', this.path(filePath));
+      const res = await this.fetch(url); if (!res.ok) return '';
+      const text = await res.text();
+      if (text.trim().startsWith('{') && /"responseStatus"\s*:\s*"ERROR"/i.test(text)) return '';
+      return text;
+    } catch { return ''; }
+  }
+  async uploadTextFile(filePath, contents) {
+    const body = new URLSearchParams({ token: await this.getToken(), what: this.path(filePath), contents: String(contents ?? '') });
+    const res = await this.fetch(new URL('UploadTextFile', API), { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8' }, body });
+    if (!res.ok) throw new Error(`UploadTextFile HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.responseStatus !== 'OK') throw new Error(`UploadTextFile: ${data.message || data.responseStatus}`);
+    return data;
+  }
 }
 module.exports = { YemotClient, validDuration };

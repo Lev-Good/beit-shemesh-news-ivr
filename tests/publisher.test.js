@@ -17,3 +17,19 @@ test('מצב shift_to_zero מפנה מקום ומפרסם כ-000.wav', async () 
   await publisher.publish('source.wav', 'call');
   assert.deepEqual(actions, [['move', '1/001.wav', '1/002.wav'], ['move', '1/000.wav', '1/001.wav'], ['copy', 'source.wav', '1/000.wav']]);
 });
+
+test('פרסום מתעד ב-publish_log.txt ומשנה את שם קובץ הארכיון למספר הקובץ והטלפון', async () => {
+  const moved = []; const logs = {};
+  const yemot = {
+    async getIVR2Dir() { return { files: [{ name: '004.wav' }] }; },
+    async copyFile() {},
+    async moveFile(a, b) { moved.push([a, b]); },
+    async downloadTextFile(p) { return logs[p] || 'שורה ישנה\r\n'; },
+    async uploadTextFile(p, c) { logs[p] = c; }
+  };
+  const publisher = createPublisher({ yemot, config: { publishPath: '2/1', publishOrderMode: 'highest_first' } });
+  const res = await publisher.publish('2/2/preview/abc.wav', 'abc', '2/1', { phone: '0521234567', text: 'הודעה לדוגמה', archiveDir: '2/2/archive', archivePath: '2/2/archive/abc_1.wav' });
+  assert.equal(res.number, 5);
+  assert.deepEqual(moved, [['2/2/archive/abc_1.wav', '2/2/archive/005_0521234567.wav']]);
+  assert.match(logs['2/1/publish_log.txt'], /קובץ: 005\.wav \| טלפון: 0521234567 \| טקסט: "הודעה לדוגמה"\r\nשורה ישנה/);
+});

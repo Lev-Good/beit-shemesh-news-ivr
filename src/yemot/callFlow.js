@@ -48,7 +48,7 @@ function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logg
           if (job.status === 'failed') {
             const choice = await io.aiFailure();
             if (choice === '1') {
-              const published = await publisher.publish(archivePath, callId, publishDir); triggerTzintuk(); await io.published(published); return { state: 'published_original', published, archivePath };
+              const published = await publisher.publish(archivePath, callId, publishDir, { phone, text: '', archiveDir, archivePath }); triggerTzintuk(); await io.published(published); return { state: 'published_original', published, archivePath };
             }
             if (choice === '2') { job = processor.start(callId, archivePath, procOpts); continue; }
             return { state: 'disconnected', archivePath };
@@ -56,7 +56,7 @@ function createCallFlow({ yemot, processor, publisher, rateLimiter, config, logg
           if (job.status === 'ready') {
             const choice = await io.preview(job.previewPath, job.result.text);
             if (choice === '1') {
-              const published = await publisher.publish(job.previewPath, callId, publishDir);
+              const published = await publisher.publish(job.previewPath, callId, publishDir, { phone, text: job.result?.text || '', archiveDir, archivePath });
               triggerTzintuk();
               await io.published(published); await processor.removePreview(callId);
               return { state: 'published', published, archivePath };
